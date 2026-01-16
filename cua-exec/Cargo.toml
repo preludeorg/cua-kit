@@ -2,7 +2,7 @@
 name = "cua-exec"
 version = "0.1.0"
 edition = "2024"
-description = "Computer Use Agent Execution BOF - Execute Claude commands"
+description = "Computer Use Agent Execution BOF - Execute agent commands"
 
 [lib]
 name = "cua_exec_lib"
