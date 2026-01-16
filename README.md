@@ -173,4 +173,4 @@ Sessions are enumerated from `~/.claude/history.jsonl`. Session files are locate
 
 ## License
 
-For authorized security testing only.
+See `LICENSE.md`
