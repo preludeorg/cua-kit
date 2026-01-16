@@ -1,0 +1,9 @@
+[package]
+name = "cua-bof-common"
+version = "0.1.0"
+edition = "2024"
+description = "Shared BOF infrastructure for CUA-Kit"
+
+[lib]
+crate-type = ["rlib"]
+path = "src/lib.rs"

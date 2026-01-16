@@ -1,0 +1,99 @@
+# cua-enum BOF - Enumerate AI/LLM agent configurations from Cobalt Strike Beacon
+# Usage: cua-enum [options]
+
+alias cua-enum {
+    local('$barch $handle $data $args $flags $user $i');
+
+    # Parse arguments
+    $flags = 0;  # bit 0 = JSON output
+    $user = "";
+
+    $i = 1;
+    while ($i < size(@_)) {
+        if (@_[$i] eq "-j" || @_[$i] eq "--json") {
+            $flags = $flags | 1;
+        }
+        else if (@_[$i] eq "-u" || @_[$i] eq "--user") {
+            $i = $i + 1;
+            if ($i < size(@_)) {
+                $user = @_[$i];
+            }
+        }
+        $i = $i + 1;
+    }
+
+    # Figure out the arch of this session
+    $barch = barch($1);
+
+    # Read in the right BOF file from bin/release/
+    $handle = openf(script_resource("../bin/release/cua-enum. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/cua-enum. $+ $barch $+ .o");
+        return;
+    }
+
+    # Pack arguments: flags (int) + username (z-string)
+    $args = bof_pack($1, "iz", $flags, $user);
+
+    # Announce what we're doing
+    if (strlen($user) > 0) {
+        btask($1, "Enumerating AI agent configurations for user: " . $user);
+    } else {
+        btask($1, "Enumerating AI agent configurations for all users");
+    }
+
+    # Execute it
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+alias cua-enum-json {
+    local('$barch $handle $data $args');
+
+    $barch = barch($1);
+    $handle = openf(script_resource("../bin/release/cua-enum. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/");
+        return;
+    }
+
+    # JSON output flag = 1
+    $args = bof_pack($1, "iz", 1, "");
+
+    btask($1, "Enumerating AI agent configurations (JSON output)");
+    beacon_inline_execute($1, $data, "go", $args);
+}
+
+beacon_command_register(
+    "cua-enum",
+    "Enumerate AI/LLM agent configurations on the target system",
+    "Usage: cua-enum [options]\n\n" .
+    "Enumerates AI agent configurations including Claude Code, OpenAI Codex CLI,\n" .
+    "Cursor IDE, Gemini CLI, and AGENTS.md files.\n\n" .
+    "Options:\n" .
+    "  -j, --json     Output results in JSON format\n" .
+    "  -u, --user     Target specific user (default: all users)\n\n" .
+    "Examples:\n" .
+    "  cua-enum                    # Enumerate all users, plaintext output\n" .
+    "  cua-enum -j                 # Enumerate all users, JSON output\n" .
+    "  cua-enum -u matt            # Enumerate specific user\n" .
+    "  cua-enum -u matt -j         # Specific user, JSON output\n\n" .
+    "Detected Configurations:\n" .
+    "  - Claude Code: settings.json, .claude.json, CLAUDE.md, MCP servers\n" .
+    "  - Codex CLI: config.toml, AGENTS.md, skills, rules\n" .
+    "  - Cursor: state.vscdb, .cursor/rules, .cursorrules\n" .
+    "  - Gemini CLI: settings.json, extensions, commands\n" .
+    "  - AGENTS.md files across all project directories\n"
+);
+
+beacon_command_register(
+    "cua-enum-json",
+    "Enumerate AI agent configurations with JSON output",
+    "Usage: cua-enum-json\n\n" .
+    "Shortcut for 'cua-enum -j' - outputs results in JSON format for parsing.\n"
+);

@@ -1,0 +1,34 @@
+# OpenAI Codex CLI Configuration
+
+[general]
+model = "gpt-4"
+approval_policy = "auto"
+
+[sandbox]
+enabled = true
+network = false
+
+[mcp_servers.filesystem]
+type = "stdio"
+command = "npx"
+args = ["-y", "@anthropic/mcp-filesystem"]
+enabled = true
+
+[mcp_servers.github]
+type = "http"
+url = "https://api.github.com/mcp"
+bearer_token_env_var = "GITHUB_TOKEN"
+enabled = true
+
+[mcp_servers.internal-api]
+type = "http"
+url = "https://internal.company.com/mcp"
+http_headers = { "X-API-Key" = "secret-key-123" }
+enabled = true
+
+[profiles.secure]
+approval_policy = "always"
+sandbox.network = false
+
+[features]
+skills = true

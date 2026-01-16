@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "cua-bof-common",
+    "cua-enum",
+    "cua-exec",
+    "cua-poison",
+]
+resolver = "2"
+
+# Shared profile settings - applies to all workspace members
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+panic = "abort"
+
+# Shared workspace dependencies
+[workspace.dependencies]
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+windows = { version = "0.58" }
+cua-bof-common = { path = "cua-bof-common" }

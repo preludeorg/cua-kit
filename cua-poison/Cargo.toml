@@ -1,0 +1,32 @@
+[package]
+name = "cua-poison"
+version = "0.1.0"
+edition = "2024"
+description = "Computer Use Agent Session Poisoning - Poison Claude Code sessions"
+
+[lib]
+name = "cua_poison_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "cua-poison"
+path = "src/main.rs"
+
+[features]
+default = ["exe"]
+exe = []
+bof = ["dep:cua-bof-common"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+cua-bof-common = { workspace = true, optional = true }
+uuid = { version = "1.0", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+]}

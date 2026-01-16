@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-filesystem"],
+      "env": {
+        "ALLOWED_PATHS": "/home/user/projects"
+      }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.github.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
+    },
+    "database": {
+      "type": "stdio",
+      "command": "/opt/mcp/db-server",
+      "env": {
+        "DB_API_KEY": "${DB_API_KEY}",
+        "DB_SECRET": "hardcoded-secret-bad-practice"
+      }
+    }
+  }
+}
