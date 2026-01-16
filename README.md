@@ -1,6 +1,6 @@
 # CUA-Kit
 
-A security toolkit for enumerating and interacting with computer use agents on Windows and macOS systems.
+A toolkit for enumerating and interacting with computer use agents on Windows and macOS systems.
 
 ## Tools
 
