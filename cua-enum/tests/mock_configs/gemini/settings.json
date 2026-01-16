@@ -1,0 +1,26 @@
+{
+  "theme": "dark",
+  "editor": "vscode",
+  "model": "gemini-2.0-flash",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-filesystem"],
+      "env": {
+        "ALLOWED_PATHS": "/home/user"
+      }
+    },
+    "web-search": {
+      "command": "/usr/local/bin/web-search-mcp",
+      "env": {
+        "SEARCH_API_KEY": "${SEARCH_API_KEY}"
+      }
+    }
+  },
+  "tools": {
+    "shell": {
+      "enabled": true,
+      "allowedCommands": ["ls", "cat", "grep"]
+    }
+  }
+}

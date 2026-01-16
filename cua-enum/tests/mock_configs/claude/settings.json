@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Read(~/.zshrc)",
+      "Bash(cargo test:*)"
+    ],
+    "deny": [
+      "Bash(curl:*)",
+      "Read(./.env)"
+    ],
+    "ask": [
+      "Bash(git push:*)"
+    ],
+    "additionalDirectories": ["../docs/"],
+    "defaultMode": "acceptEdits"
+  },
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "NODE_ENV": "development"
+  },
+  "model": "claude-opus-4-5-20251101",
+  "hooks": {
+    "PreToolUse": {
+      "Bash": "echo 'Running...'"
+    }
+  }
+}

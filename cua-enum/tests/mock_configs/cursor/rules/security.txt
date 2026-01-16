@@ -1,0 +1,7 @@
+Security Rules for Cursor AI
+
+1. Never suggest code that stores passwords in plain text
+2. Always use parameterized SQL queries
+3. Validate all user input
+4. Use HTTPS for all external API calls
+5. Never expose API keys in client-side code

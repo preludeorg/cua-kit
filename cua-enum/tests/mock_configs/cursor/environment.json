@@ -1,0 +1,12 @@
+{
+  "name": "test-environment",
+  "image": "ubuntu:22.04",
+  "env": {
+    "NODE_ENV": "development",
+    "API_URL": "https://api.example.com"
+  },
+  "ports": [3000, 5432],
+  "volumes": [
+    "/workspace:/app"
+  ]
+}

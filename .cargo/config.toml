@@ -1,0 +1,15 @@
+# Default to native target - don't force Windows
+# [build]
+# target = "x86_64-pc-windows-msvc"
+
+# Windows x64 - static CRT linking for standalone binaries
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# macOS Intel
+[target.x86_64-apple-darwin]
+# No special flags needed
+
+# macOS Apple Silicon
+[target.aarch64-apple-darwin]
+# No special flags needed

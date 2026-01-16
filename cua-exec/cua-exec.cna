@@ -1,0 +1,589 @@
+# claude BOF - Prompt claude from Cobalt Strike Beacon
+# Usage: claude <prompt>
+
+# Import JSON library
+# This path will be automatically set by setup.ps1
+# Or manually replace this placeholder with the full path to json.jar
+import org.json.* from: "{{JSON_JAR_PATH}}";
+
+# Global hashes to store session IDs per beacon
+%claude_sessions = %();
+%codex_sessions = %();
+%gemini_sessions = %();
+%cursor_sessions = %();
+
+# Callback function to handle BOF output
+sub claude_callback {
+    local('$bid $result %info $json $session_id $output $is_error');
+
+    ($bid, $result, %info) = @_;
+
+    if ("error" eq %info["type"]) {
+        berror($bid, "claude error: " . $result);
+        return;
+    }
+
+    # Parse JSON using org.json library
+    try {
+        $json = [new JSONObject: $result];
+
+        # Extract fields
+        $session_id = [$json getString: "session_id"];
+        $output = [$json getString: "result"];
+        $is_error = [$json getBoolean: "is_error"];
+
+        # Store session ID for this beacon
+        if ($session_id) {
+            %claude_sessions[$bid] = $session_id;
+        }
+
+        # Display the result
+        if ($is_error) {
+            berror($bid, "[!] Claude error: " . $output);
+        } else {
+            blog($bid, $output);
+        }
+    }
+    catch $exception {
+        berror($bid, "Failed to parse JSON: " . $exception);
+        berror($bid, "Raw output: " . $result);
+    }
+}
+
+alias claude {
+    local('$barch $handle $data $args $prompt $session_id $tool');
+
+    if (size(@_) < 2) {
+        berror($1, "Usage: claude <prompt>");
+        berror($1, "Example: claude \"what is 2+2?\"");
+        return;
+    }
+
+    # Get the prompt
+    $prompt = substr(join(" ", sublist(@_, 1)), 0);
+
+    # Get stored session ID for this beacon (if any)
+    if ($1 in %claude_sessions) {
+        $session_id = %claude_sessions[$1];
+    } else {
+        $session_id = "";
+    }
+
+    # Tool type: 0 = Claude
+    $tool = 0;
+
+    # Figure out the arch of this session
+    $barch = barch($1);
+
+    # Read in the right BOF file from bin/release/
+    $handle = openf(script_resource("../bin/release/cua-exec. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/cua-exec. $+ $barch $+ .o");
+        return;
+    }
+
+    # Pack our arguments (tool, prompt, session_id)
+    $args = bof_pack($1, "izz", $tool, $prompt, $session_id);
+
+    # Announce what we're doing
+    if (strlen($session_id) > 0) {
+        btask($1, "Prompting claude (session: " . substr($session_id, 0, 8) . "...) with: " . $prompt);
+    } else {
+        btask($1, "Prompting claude (new session) with: " . $prompt);
+    }
+
+    # Execute it with callback
+    beacon_inline_execute($1, $data, "go", $args, &claude_callback);
+}
+
+# Command to reset session for a beacon
+alias claude_reset {
+    if ($1 in %claude_sessions) {
+        blog($1, "[+] Cleared claude session: " . %claude_sessions[$1]);
+        %claude_sessions[$1] = $null;
+        remove(%claude_sessions, $1);
+    } else {
+        blog($1, "[-] No active claude session to reset");
+    }
+}
+
+# Command to show current session ID
+alias claude_session {
+    if (%claude_sessions[$1]) {
+        blog($1, "[+] Current session ID: " . %claude_sessions[$1]);
+    } else {
+        blog($1, "[-] No active claude session");
+    }
+}
+
+# Callback function for Codex output
+sub codex_callback {
+    local('$bid $result %info $json $session_id $output $is_error');
+
+    ($bid, $result, %info) = @_;
+
+    if ("error" eq %info["type"]) {
+        berror($bid, "codex error: " . $result);
+        return;
+    }
+
+    # Parse JSON
+    try {
+        $json = [new JSONObject: $result];
+
+        # Extract fields
+        $session_id = [$json getString: "session_id"];
+        $output = [$json getString: "result"];
+        $is_error = [$json getBoolean: "is_error"];
+
+        # Store session ID for this beacon
+        if ($session_id) {
+            %codex_sessions[$bid] = $session_id;
+        }
+
+        # Display the result
+        if ($is_error) {
+            berror($bid, "[!] Codex error: " . $output);
+        } else {
+            blog($bid, $output);
+        }
+    }
+    catch $exception {
+        berror($bid, "Failed to parse JSON: " . $exception);
+        berror($bid, "Raw output: " . $result);
+    }
+}
+
+# Gemini callback
+sub gemini_callback {
+    local('$bid $result %info $json $session_id $output $is_error');
+
+    ($bid, $result, %info) = @_;
+
+    if ("error" eq %info["type"]) {
+        berror($bid, "gemini error: " . $result);
+        return;
+    }
+
+    # Parse JSON
+    try {
+        $json = [new JSONObject: $result];
+
+        # Extract fields
+        $session_id = [$json getString: "session_id"];
+        $output = [$json getString: "result"];
+        $is_error = [$json getBoolean: "is_error"];
+
+        # Store session ID for this beacon
+        if ($session_id) {
+            %gemini_sessions[$bid] = $session_id;
+        }
+
+        # Display the result
+        if ($is_error) {
+            berror($bid, "[!] Gemini error: " . $output);
+        } else {
+            blog($bid, $output);
+        }
+    }
+    catch $exception {
+        berror($bid, "Failed to parse JSON: " . $exception);
+        berror($bid, "Raw output: " . $result);
+    }
+}
+
+# Cursor callback
+sub cursor_callback {
+    local('$bid $result %info $json $session_id $output $is_error');
+
+    ($bid, $result, %info) = @_;
+
+    if ("error" eq %info["type"]) {
+        berror($bid, "cursor error: " . $result);
+        return;
+    }
+
+    # Parse JSON
+    try {
+        $json = [new JSONObject: $result];
+
+        # Extract fields
+        $session_id = [$json getString: "session_id"];
+        $output = [$json getString: "result"];
+        $is_error = [$json getBoolean: "is_error"];
+
+        # Store session ID for this beacon
+        if ($session_id) {
+            %cursor_sessions[$bid] = $session_id;
+        }
+
+        # Display the result
+        if ($is_error) {
+            berror($bid, "[!] Cursor error: " . $output);
+        } else {
+            blog($bid, $output);
+        }
+    }
+    catch $exception {
+        berror($bid, "Failed to parse JSON: " . $exception);
+        berror($bid, "Raw output: " . $result);
+    }
+}
+
+alias codex {
+    local('$barch $handle $data $args $prompt $session_id $tool');
+
+    if (size(@_) < 2) {
+        berror($1, "Usage: codex <prompt>");
+        berror($1, "Example: codex \"what is 2+2?\"");
+        return;
+    }
+
+    # Get the prompt
+    $prompt = substr(join(" ", sublist(@_, 1)), 0);
+
+    # Get stored session ID for this beacon (if any)
+    if ($1 in %codex_sessions) {
+        $session_id = %codex_sessions[$1];
+    } else {
+        $session_id = "";
+    }
+
+    # Tool type: 1 = Codex
+    $tool = 1;
+
+    # Figure out the arch of this session
+    $barch = barch($1);
+
+    # Read in the right BOF file from bin/release/
+    $handle = openf(script_resource("../bin/release/cua-exec. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/cua-exec. $+ $barch $+ .o");
+        return;
+    }
+
+    # Pack our arguments (tool, prompt, session_id)
+    $args = bof_pack($1, "izz", $tool, $prompt, $session_id);
+
+    # Announce what we're doing
+    if (strlen($session_id) > 0) {
+        btask($1, "Prompting codex (session: " . substr($session_id, 0, 8) . "...) with: " . $prompt);
+    } else {
+        btask($1, "Prompting codex (new session) with: " . $prompt);
+    }
+
+    # Execute it with callback
+    beacon_inline_execute($1, $data, "go", $args, &codex_callback);
+}
+
+# Gemini alias
+alias gemini {
+    local('$barch $handle $data $args $prompt $session_id $tool');
+
+    if (size(@_) < 2) {
+        berror($1, "Usage: gemini <prompt>");
+        berror($1, "Example: gemini \"what is 2+2?\"");
+        return;
+    }
+
+    # Get the prompt
+    $prompt = substr(join(" ", sublist(@_, 1)), 0);
+
+    # Get stored session ID for this beacon (if any)
+    if ($1 in %gemini_sessions) {
+        $session_id = %gemini_sessions[$1];
+    } else {
+        $session_id = "";
+    }
+
+    # Tool type: 2 = Gemini
+    $tool = 2;
+
+    # Figure out the arch of this session
+    $barch = barch($1);
+
+    # Read in the right BOF file from bin/release/
+    $handle = openf(script_resource("../bin/release/cua-exec. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/cua-exec. $+ $barch $+ .o");
+        return;
+    }
+
+    # Pack our arguments (tool, prompt, session_id)
+    $args = bof_pack($1, "izz", $tool, $prompt, $session_id);
+
+    # Announce what we're doing
+    if (strlen($session_id) > 0) {
+        btask($1, "Prompting gemini (session: " . substr($session_id, 0, 8) . "...) with: " . $prompt);
+    } else {
+        btask($1, "Prompting gemini (new session) with: " . $prompt);
+    }
+
+    # Execute it with callback
+    beacon_inline_execute($1, $data, "go", $args, &gemini_callback);
+}
+
+# Cursor alias
+alias cursor {
+    local('$barch $handle $data $args $prompt $session_id $tool');
+
+    if (size(@_) < 2) {
+        berror($1, "Usage: cursor <prompt>");
+        berror($1, "Example: cursor \"what is 2+2?\"");
+        return;
+    }
+
+    # Get the prompt
+    $prompt = substr(join(" ", sublist(@_, 1)), 0);
+
+    # Get stored session ID for this beacon (if any)
+    if ($1 in %cursor_sessions) {
+        $session_id = %cursor_sessions[$1];
+    } else {
+        $session_id = "";
+    }
+
+    # Tool type: 3 = Cursor
+    $tool = 3;
+
+    # Figure out the arch of this session
+    $barch = barch($1);
+
+    # Read in the right BOF file from bin/release/
+    $handle = openf(script_resource("../bin/release/cua-exec. $+ $barch $+ .o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if (strlen($data) == 0) {
+        berror($1, "Error: Could not read BOF file from bin/release/cua-exec. $+ $barch $+ .o");
+        return;
+    }
+
+    # Pack our arguments (tool, prompt, session_id)
+    $args = bof_pack($1, "izz", $tool, $prompt, $session_id);
+
+    # Announce what we're doing
+    if (strlen($session_id) > 0) {
+        btask($1, "Prompting cursor (session: " . substr($session_id, 0, 8) . "...) with: " . $prompt);
+    } else {
+        btask($1, "Prompting cursor (new session) with: " . $prompt);
+    }
+
+    # Execute it with callback
+    beacon_inline_execute($1, $data, "go", $args, &cursor_callback);
+}
+
+# Command to reset codex session for a beacon
+alias codex_reset {
+    if ($1 in %codex_sessions) {
+        blog($1, "[+] Cleared codex session: " . %codex_sessions[$1]);
+        %codex_sessions[$1] = $null;
+        remove(%codex_sessions, $1);
+    } else {
+        blog($1, "[-] No active codex session to reset");
+    }
+}
+
+# Command to show current codex session ID
+alias codex_session {
+    if (%codex_sessions[$1]) {
+        blog($1, "[+] Current session ID: " . %codex_sessions[$1]);
+    } else {
+        blog($1, "[-] No active codex session");
+    }
+}
+
+# Command to reset gemini session for a beacon
+alias gemini_reset {
+    if ($1 in %gemini_sessions) {
+        blog($1, "[+] Cleared gemini session: " . %gemini_sessions[$1]);
+        %gemini_sessions[$1] = $null;
+        remove(%gemini_sessions, $1);
+    } else {
+        blog($1, "[-] No active gemini session to reset");
+    }
+}
+
+# Command to show current gemini session ID
+alias gemini_session {
+    if (%gemini_sessions[$1]) {
+        blog($1, "[+] Current session ID: " . %gemini_sessions[$1]);
+    } else {
+        blog($1, "[-] No active gemini session");
+    }
+}
+
+# Command to reset cursor session for a beacon
+alias cursor_reset {
+    if ($1 in %cursor_sessions) {
+        blog($1, "[+] Cleared cursor session: " . %cursor_sessions[$1]);
+        %cursor_sessions[$1] = $null;
+        remove(%cursor_sessions, $1);
+    } else {
+        blog($1, "[-] No active cursor session to reset");
+    }
+}
+
+# Command to show current cursor session ID
+alias cursor_session {
+    if (%cursor_sessions[$1]) {
+        blog($1, "[+] Current session ID: " . %cursor_sessions[$1]);
+    } else {
+        blog($1, "[-] No active cursor session");
+    }
+}
+
+beacon_command_register(
+    "claude",
+    "Prompt claude code with a prompt (maintains session context)",
+    "Usage: claude <prompt>\n\n" .
+    "Executes 'claude' command on the target system with the given prompt.\n" .
+    "Automatically maintains session continuity across multiple prompts for context.\n\n" .
+    "Arguments:\n" .
+    "  prompt  - The prompt to send to the LLM (required)\n\n" .
+    "Examples:\n" .
+    "  claude what is 2+2?\n" .
+    "  claude \"what is one more than that?\"\n" .
+    "  claude \"explain what a buffer overflow is\"\n" .
+    "  claude \"write a Python script to list files\"\n\n" .
+    "Session Management:\n" .
+    "  - First prompt creates a new session\n" .
+    "  - Subsequent prompts reuse the session for context\n" .
+    "  - Use 'claude_session' to view current session ID\n" .
+    "  - Use 'claude_reset' to start a fresh session\n\n" .
+    "Requirements:\n" .
+    "  - claude must be installed and in PATH on target system\n"
+);
+
+beacon_command_register(
+    "claude_reset",
+    "Reset the claude session for this beacon",
+    "Usage: claude_reset\n\n" .
+    "Clears the stored session ID, forcing the next 'claude' command\n" .
+    "to start a new session without prior context.\n"
+);
+
+beacon_command_register(
+    "claude_session",
+    "Display the current claude session ID",
+    "Usage: claude_session\n\n" .
+    "Shows the stored session ID for this beacon, if one exists.\n"
+);
+
+beacon_command_register(
+    "codex",
+    "Prompt OpenAI Codex with a prompt (maintains session context)",
+    "Usage: codex <prompt>\n\n" .
+    "Executes 'codex exec' command on the target system with --yolo mode.\n" .
+    "Automatically maintains session continuity across multiple prompts.\n\n" .
+    "Arguments:\n" .
+    "  prompt  - The prompt to send to Codex (required)\n\n" .
+    "Examples:\n" .
+    "  codex what is 2+2?\n" .
+    "  codex \"what is one more than that?\"\n" .
+    "  codex \"explain what a buffer overflow is\"\n\n" .
+    "Session Management:\n" .
+    "  - First prompt creates a new session\n" .
+    "  - Subsequent prompts reuse the session for context\n" .
+    "  - Use 'codex_session' to view current session ID\n" .
+    "  - Use 'codex_reset' to start a fresh session\n\n" .
+    "Requirements:\n" .
+    "  - codex CLI must be installed on target system\n"
+);
+
+beacon_command_register(
+    "codex_reset",
+    "Reset the codex session for this beacon",
+    "Usage: codex_reset\n\n" .
+    "Clears the stored session ID, forcing the next 'codex' command\n" .
+    "to start a new session without prior context.\n"
+);
+
+beacon_command_register(
+    "codex_session",
+    "Display the current codex session ID",
+    "Usage: codex_session\n\n" .
+    "Shows the stored session ID for this beacon, if one exists.\n"
+);
+
+beacon_command_register(
+    "gemini",
+    "Prompt Gemini CLI with a prompt (maintains session context)",
+    "Usage: gemini <prompt>\n\n" .
+    "Executes 'gemini' command on the target system with --yolo mode.\n" .
+    "Automatically maintains session continuity across multiple prompts.\n\n" .
+    "Arguments:\n" .
+    "  prompt  - The prompt to send to Gemini (required)\n\n" .
+    "Examples:\n" .
+    "  gemini what is 2+2?\n" .
+    "  gemini \"what is one more than that?\"\n" .
+    "  gemini \"explain what a buffer overflow is\"\n\n" .
+    "Session Management:\n" .
+    "  - First prompt creates a new session\n" .
+    "  - Subsequent prompts reuse the session for context\n" .
+    "  - Use 'gemini_session' to view current session ID\n" .
+    "  - Use 'gemini_reset' to start a fresh session\n\n" .
+    "Requirements:\n" .
+    "  - gemini CLI must be installed on target system\n"
+);
+
+beacon_command_register(
+    "gemini_reset",
+    "Reset the gemini session for this beacon",
+    "Usage: gemini_reset\n\n" .
+    "Clears the stored session ID, forcing the next 'gemini' command\n" .
+    "to start a new session without prior context.\n"
+);
+
+beacon_command_register(
+    "gemini_session",
+    "Display the current gemini session ID",
+    "Usage: gemini_session\n\n" .
+    "Shows the stored session ID for this beacon, if one exists.\n"
+);
+
+beacon_command_register(
+    "cursor",
+    "Prompt Cursor CLI agent with a prompt (maintains session context)",
+    "Usage: cursor <prompt>\n\n" .
+    "Executes 'agent' command on the target system with --force mode.\n" .
+    "Automatically maintains session continuity across multiple prompts.\n\n" .
+    "Arguments:\n" .
+    "  prompt  - The prompt to send to Cursor (required)\n\n" .
+    "Examples:\n" .
+    "  cursor what is 2+2?\n" .
+    "  cursor \"what is one more than that?\"\n" .
+    "  cursor \"explain what a buffer overflow is\"\n\n" .
+    "Session Management:\n" .
+    "  - First prompt creates a new session\n" .
+    "  - Subsequent prompts reuse the session for context\n" .
+    "  - Use 'cursor_session' to view current session ID\n" .
+    "  - Use 'cursor_reset' to start a fresh session\n\n" .
+    "Requirements:\n" .
+    "  - cursor CLI must be installed on target system\n" .
+    "  - CURSOR_API_KEY environment variable must be set\n"
+);
+
+beacon_command_register(
+    "cursor_reset",
+    "Reset the cursor session for this beacon",
+    "Usage: cursor_reset\n\n" .
+    "Clears the stored session ID, forcing the next 'cursor' command\n" .
+    "to start a new session without prior context.\n"
+);
+
+beacon_command_register(
+    "cursor_session",
+    "Display the current cursor session ID",
+    "Usage: cursor_session\n\n" .
+    "Shows the stored session ID for this beacon, if one exists.\n"
+);
