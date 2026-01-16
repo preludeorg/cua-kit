@@ -6,8 +6,8 @@ A toolkit for enumerating and interacting with computer use agents on Windows an
 
 | Tool | Description | Outputs |
 |------|-------------|---------|
-| **cua-enum** | Enumerate AI agent configurations (Claude Code, Codex CLI, Cursor, Gemini CLI) | `.exe`, `.x64.o` |
-| **cua-exec** | Execute AI CLI commands via wrapper or direct API (Claude, Codex, Gemini, Cursor) | `.exe`, `.x64.o` |
+| **cua-enum** | Enumerate computer use agent configurations (Claude Code, Codex CLI, Cursor, Gemini CLI) | `.exe`, `.x64.o` |
+| **cua-exec** | Execute computer use agent CLI commands via wrapper or direct API (Claude, Codex, Gemini, Cursor) | `.exe`, `.x64.o` |
 | **cua-poison** | Poison Claude Code sessions with fake compact summaries | `.exe`, `.x64.o` |
 
 ## Quick Start
