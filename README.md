@@ -129,6 +129,68 @@ cua-kit/
 - **Gemini CLI**: settings.json, extensions, commands, .env API keys
 - **AGENTS.md**: Discovery across all project directories
 
+## Computer Use Agent CLI Execution (cua-exec)
+
+`cua-exec` executes prompts via computer use agents installed on the target system. It wraps the CLI tools with automatic permission bypassing, filesystem access, and session continuity.
+
+### How It Works
+
+1. Locates the target CLI tool in PATH (claude, codex, gemini, or agent)
+2. Invokes with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--force`)
+3. Grants filesystem access to the root directory (`C:\` or `/`)
+4. Captures JSON output and extracts session IDs for multi-turn conversations
+5. Hides the command window on Windows (`CREATE_NO_WINDOW`)
+
+### Supported Tools
+
+| Tool | CLI Command | Permission Bypass | Session Flag |
+|------|-------------|-------------------|--------------|
+| Claude Code | `claude` | `--dangerously-skip-permissions` | `-r <session_id>` |
+| OpenAI Codex | `codex exec` | `--yolo` | `resume <session_id>` |
+| Gemini CLI | `gemini` | `--yolo` | `--resume <session_id>` |
+| Cursor | `agent` | `--force` | `--resume=<session_id>` |
+
+### CLI Usage
+
+```powershell
+# Basic prompts (defaults to Claude)
+.\bin\release\cua-exec.exe "what is 2+2?"
+.\bin\release\cua-exec.exe -p "explain buffer overflows"
+
+# Different agents
+.\bin\release\cua-exec.exe -t codex "list files in this directory"
+.\bin\release\cua-exec.exe -t gemini "what is a buffer overflow?"
+.\bin\release\cua-exec.exe -t cursor "analyze this code"
+
+# Session continuity
+.\bin\release\cua-exec.exe "what is 2+2?"
+# Returns session_id: abc123...
+.\bin\release\cua-exec.exe -s abc123 "what is one more than that?"
+
+# JSON output
+.\bin\release\cua-exec.exe -j "hello world"
+# Returns: {"session_id":"...","result":"...","is_error":false}
+
+# Direct API mode (Claude only, requires API key)
+.\bin\release\cua-exec.exe -a -k sk-ant-xxx "hello"
+```
+
+### Beacon Commands
+
+The Aggressor script provides commands for each agent with automatic session tracking per beacon:
+
+```
+beacon> claude "what files are in this directory?"
+beacon> claude "show me the contents of config.json"
+beacon> claude_session    # View current session ID
+beacon> claude_reset      # Start fresh session
+
+beacon> codex "explain this codebase"
+beacon> gemini "what vulnerabilities exist here?"
+beacon> cursor "analyze the authentication flow"
+```
+
+
 ## Session Poisoning (cua-poison)
 
 `cua-poison` demonstrates context poisoning attacks against Claude Code sessions. It injects fake compact summaries into session files that Claude treats as established user preferences when the session is resumed.
