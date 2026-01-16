@@ -2,7 +2,7 @@
 name = "cua-enum"
 version = "0.1.0"
 edition = "2024"
-description = "Computer Use Agent Enumeration BOF - Enumerates AI/LLM agent configurations"
+description = "Computer Use Agent Enumeration BOF - Enumerates agent configurations"
 
 [lib]
 name = "cua_enum_lib"
